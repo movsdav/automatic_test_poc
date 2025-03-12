@@ -1,42 +1,42 @@
 import openai
 import os
-import subprocess
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def get_modified_files():
-    """Get a list of changed Python files."""
+def get_main_py_content():
+    """Reads the full content of main.py."""
     try:
-        files = subprocess.check_output(["git", "diff", "--name-only", "HEAD~1"]).decode().split("\n")
-    except subprocess.CalledProcessError:
-        print("No previous commit found, running on all files.")
-        files = subprocess.check_output(["git", "ls-files"]).decode().split("\n")
+        with open("main.py", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        print("Error: main.py not found.")
+        return ""
 
-    return [file.strip() for file in files if file.endswith(".py")]
-
-def generate_test_code(file_path):
-    """Generate test cases for a given file using OpenAI API."""
-    with open(file_path, "r") as f:
-        code = f.read()
+def generate_test_code():
+    """Generates AI-powered tests for main.py."""
+    code = get_main_py_content()
+    
+    if not code.strip():
+        print("Error: main.py is empty. Skipping test generation.")
+        return
 
     prompt = f"Write unit tests using pytest for the following Python functions:\n\n{code}"
-    
-    response = openai.chat.completions.create(
+
+    response = openai.ChatCompletion.create(
         model="gpt-4",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[
+            {"role": "system", "content": "You are an AI that generates Python unit tests."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.5
     )
 
-    test_code = response['choices'][0]['message']['content']
+    test_code = response["choices"][0]["message"]["content"]
 
-    test_file_path = f"tests/{os.path.basename(file_path).replace('.py', '_test.py')}"
-    os.makedirs(os.path.dirname(test_file_path), exist_ok=True)
-
-    with open(test_file_path, "w") as test_file:
+    with open("ai_generated_tests.py", "w") as test_file:
         test_file.write(test_code)
 
-    print(f"AI-generated tests saved to {test_file_path}")
+    print("✅ AI-generated tests saved to ai_generated_tests.py")
 
 if __name__ == "__main__":
-    modified_files = get_modified_files()
-    for file in modified_files:
-        generate_test_code(file)
+    generate_test_code()
