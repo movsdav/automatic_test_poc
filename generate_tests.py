@@ -1,3 +1,4 @@
+import re
 import openai
 import os
 
@@ -12,6 +13,13 @@ def get_main_py_content():
         print("Error: main.py not found.")
         return ""
 
+def extract_code_block(response_text):
+    """Extracts only the Python test code from AI response."""
+    code_match = re.search(r"```python\n(.*?)\n```", response_text, re.DOTALL)
+    if code_match:
+        return code_match.group(1)  # Extract only the code inside the ```python block
+    return response_text  # If no code block found, return the whole response
+
 def generate_test_code():
     """Generates AI-powered tests for main.py."""
     code = get_main_py_content()
@@ -22,7 +30,7 @@ def generate_test_code():
 
     prompt = f"Write unit tests using pytest for the following Python functions:\n\n{code}"
 
-    response = openai.ChatCompletion.create(
+    response = openai.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are an AI that generates Python unit tests."},
@@ -31,7 +39,7 @@ def generate_test_code():
         temperature=0.5
     )
 
-    test_code = response["choices"][0]["message"]["content"]
+    test_code = extract_code_block(response.choices[0].message.content)
 
     with open("ai_generated_tests.py", "w") as test_file:
         test_file.write(test_code)
