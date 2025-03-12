@@ -1,1 +1,51 @@
 
+name: AI-Test-Automation
+
+on:
+  push:
+    branches:
+      - main
+      - feature/*
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set Up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install openai pytest
+
+    - name: Generate AI-Based Tests
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        python generate_tests.py
+
+    - name: Run Manually Written Tests
+      run: |
+        pytest manual_tests.py
+
+    - name: Run AI-Generated Tests
+      run: |
+        pytest ai_generated_tests.py
+
+    - name: Block Deployment on Failure
+      if: failure()
+      run: exit 1
+
+    - name: Allow Deployment
+      if: success()
+      run: echo "Tests Passed - Deployment Allowed"
