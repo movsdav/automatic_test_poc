@@ -21,7 +21,7 @@ def generate_test_code(file_path):
 
     prompt = f"Write unit tests using pytest for the following Python functions:\n\n{code}"
     
-    response = openai.ChatCompletion.create(
+    response = openai.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}]
     )
